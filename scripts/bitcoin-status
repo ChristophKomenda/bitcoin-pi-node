@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if docker info >/dev/null 2>&1; then
+    DOCKER=(docker)
+else
+    DOCKER=(sudo docker)
+fi
+
+CONTAINER="bitcoin"
+
+if ! "${DOCKER[@]}" inspect "$CONTAINER" >/dev/null 2>&1; then
+    echo "Bitcoin container '$CONTAINER' does not exist."
+    exit 1
+fi
+
+if ! "${DOCKER[@]}" inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null | grep -q true; then
+    echo "Bitcoin container is not running."
+    exit 1
+fi
+
+INFO="$("${DOCKER[@]}" exec "$CONTAINER" \
+    bitcoin-cli -datadir=/home/bitcoin/.bitcoin getblockchaininfo)"
+
+NETWORK="$("${DOCKER[@]}" exec "$CONTAINER" \
+    bitcoin-cli -datadir=/home/bitcoin/.bitcoin getnetworkinfo)"
+
+python3 - "$INFO" "$NETWORK" <<'PY'
+import json
+import sys
+
+info = json.loads(sys.argv[1])
+network = json.loads(sys.argv[2])
+
+progress = info.get("verificationprogress", 0) * 100
+size_gb = info.get("size_on_disk", 0) / 1024**3
+
+print("Bitcoin Core status")
+print("===================")
+print(f"Chain:              {info.get('chain')}")
+print(f"Blocks:             {info.get('blocks'):,}")
+print(f"Headers:            {info.get('headers'):,}")
+print(f"Sync progress:      {progress:.4f}%")
+print(f"Initial download:   {info.get('initialblockdownload')}")
+print(f"Pruned:             {info.get('pruned')}")
+print(f"Prune height:       {info.get('pruneheight'):,}")
+print(f"Data on disk:       {size_gb:.2f} GB")
+print()
+print(f"Connections:        {network.get('connections')}")
+print(f"Inbound:            {network.get('connections_in')}")
+print(f"Outbound:           {network.get('connections_out')}")
+print(f"Version:            {network.get('subversion')}")
+PY

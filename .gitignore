@@ -1,0 +1,15 @@
+# Environment / secrets
+.env
+*.cookie
+.cookie
+
+# Bitcoin Core data
+.bitcoin/
+bitcoin-data/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+*~
+.idea/
+.vscode/

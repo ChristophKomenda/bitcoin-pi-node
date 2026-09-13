@@ -1,0 +1,16 @@
+services:
+  bitcoin:
+    image: bitcoin/bitcoin:31.1
+    container_name: bitcoin
+    restart: unless-stopped
+
+    volumes:
+      - ${BITCOIN_DATA_DIR:-/srv/bitcoin}:/home/bitcoin/.bitcoin
+
+    command:
+      - -printtoconsole=1
+      - -prune=${BITCOIN_PRUNE_MIB:-20000}
+      - -server=1
+
+    ports:
+      - "8333:8333"
