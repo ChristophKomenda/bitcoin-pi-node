@@ -4,11 +4,11 @@
 
 ### Run your own Bitcoin Core node on a Raspberry Pi 5
 
-**Docker Compose · Pruned Bitcoin Core · UUID-protected storage · Optional bandwidth control**
+**Docker Compose · Pruned Bitcoin Core · Safe Storage · Home Assistant Monitoring**
 
 A lightweight, self-hosted Bitcoin Core setup for Raspberry Pi 5. Keep control of your node, store blockchain data outside the container, and check sync progress using simple command-line tools.
 
-[Get started](#quick-start) · [Key features](#why-bitcoin-pi-node) · [Bandwidth control](docs/bandwidth.md) · [Safe auto-start](#optional-safe-autostart-with-systemd) · [Monitor](#monitor-your-node) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
+[Get started](#quick-start) · [Key features](#why-bitcoin-pi-node) · [Bandwidth control](docs/bandwidth.md) · [Safe auto-start](#optional-safe-autostart-with-systemd) · [Monitor](#monitor-your-node) · [Home Assistant](#home-assistant-integration) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
 
 ![Bitcoin](https://img.shields.io/badge/Bitcoin-Core-F7931A?style=flat-square&logo=bitcoin&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-5-A22846?style=flat-square&logo=raspberrypi&logoColor=white)
@@ -34,12 +34,14 @@ Running a Bitcoin node lets you independently validate Bitcoin's rules instead o
 | **Adjustable storage path** | Configure the data directory and pruning target through `.env`. |
 | **Optional guarded auto-start** | systemd validates the expected filesystem UUID before starting Docker Compose. |
 | **Optional bandwidth limit** | Cap Bitcoin download and upload per direction using Linux `tc`, without shaping unrelated host services. |
+| **Optional Home Assistant monitoring** | Discover 21 MQTT entities for synchronization, peers, storage, uptime, network traffic and node health. |
 
-### Three advantages at a glance
+### Four advantages at a glance
 
 - **Safe storage startup:** An optional systemd service checks the exact mount point and expected filesystem UUID before launching Bitcoin Core.
 - **Bandwidth control:** Optionally cap the Bitcoin container's upload and download bandwidth, leaving other Raspberry Pi services unaffected by the container-specific limit.
 - **Lightweight Docker setup:** Pruned Bitcoin Core, persistent blockchain data, and convenient CLI monitoring with minimal dependencies.
+- **Home Assistant integration:** Optional MQTT Discovery provides 21 monitoring entities, health indicators and dashboard examples without exposing Bitcoin RPC.
 
 ### What this project does *not* include
 
@@ -323,7 +325,7 @@ Initial block validation is CPU-, storage- and network-intensive. Check temperat
 - [ ] Add an interactive setup wizard with safer defaults.
 - [x] Add automated Compose validation, Bash/ShellCheck checks and Python syntax validation in GitHub Actions.
 - [ ] Add tested installation examples and screenshots of CLI status output.
-- [ ] Explore optional Home Assistant monitoring integration.
+- [x] Add optional Home Assistant MQTT monitoring with 21 entities.
 
 ## Contributing
 
