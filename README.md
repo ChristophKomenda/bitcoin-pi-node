@@ -164,6 +164,37 @@ For the full setup, troubleshooting and rollback instructions, see **[Safe autom
 > [!IMPORTANT]
 > **Use systemd as the single lifecycle manager if the guarded service is enabled.** Direct `docker compose restart`, `up -d` or image updates may bypass UUID validation or reset the container's `tc` bandwidth rules. Use `sudo systemctl restart bitcoin-pi-node.service` for controlled restarts and set the Compose restart policy to `restart: "no"`.
 
+## Home Assistant integration
+
+**Optional Bitcoin Core monitoring with MQTT Discovery.**
+
+Connect your Raspberry Pi Bitcoin node to Home Assistant without
+exposing Bitcoin Core RPC or granting Home Assistant Docker access.
+
+### Features
+
+- 21 automatically discovered monitoring entities
+- Blockchain synchronization progress and block height
+- Connected, inbound and outbound peers
+- Bitcoin Core uptime and cumulative network traffic
+- Blockchain storage and free-space monitoring
+- Initial Block Download stall detection
+- Low-storage and missing-peer indicators
+- MQTT availability and stale-data detection
+- Optional Lovelace dashboard and notification examples
+- Periodic updates through a systemd timer
+
+The integration is **read-only and disabled by default**.
+It does not change Docker Compose, storage protection or
+the existing Bitcoin node lifecycle management.
+
+**Documentation:**
+
+- [Installation and MQTT setup](docs/home-assistant.md)
+- [Extended monitoring and configuration](docs/home-assistant-v2.md)
+- [Example Home Assistant dashboard](docs/home-assistant-dashboard.yaml)
+- [Example alert automations](docs/home-assistant-alerts.yaml)
+
 ## Monitor your node
 
 The repository includes two convenience scripts:
