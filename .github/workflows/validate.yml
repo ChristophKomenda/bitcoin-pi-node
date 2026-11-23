@@ -22,5 +22,10 @@ jobs:
         run: shellcheck scripts/install.sh scripts/bitcoin-status scripts/bitcoin-node-cli scripts/check-storage.sh scripts/install-systemd.sh scripts/apply-bandwidth.sh
       - name: Python bandwidth limiter syntax
         run: python3 -m py_compile scripts/bitcoin-bandwidth-limit.py
+      - name: Validate Home Assistant MQTT Python syntax
+        run: python3 -m py_compile scripts/bitcoin-ha-mqtt.py
+
+      - name: Run Home Assistant MQTT unit tests
+        run: python3 -m unittest discover -s tests -v
       - name: Validate Compose configuration
         run: docker compose --env-file .env.example config --quiet

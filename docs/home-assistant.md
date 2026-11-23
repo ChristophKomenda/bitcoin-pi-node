@@ -15,8 +15,11 @@ This integration publishes **read-only Bitcoin Core status** to Home Assistant u
 cd /home/admin/bitcoin-pi-node  # adjust to your checkout
 python3 -m venv .venv
 .venv/bin/pip install 'paho-mqtt>=2,<3'
-sudo install -d -m 700 /etc/bitcoin-pi-node
-sudo sh -c 'umask 077; printf "%s" "YOUR_MQTT_PASSWORD" > /etc/bitcoin-pi-node/mqtt-password'
+sudo install -d -o admin -g admin -m 700 /etc/bitcoin-pi-node
+read -rsp 'MQTT password: ' MQTT_SECRET; echo
+printf '%s' "$MQTT_SECRET" | sudo tee /etc/bitcoin-pi-node/mqtt-password >/dev/null
+unset MQTT_SECRET
+sudo chown admin:admin /etc/bitcoin-pi-node/mqtt-password
 sudo chmod 600 /etc/bitcoin-pi-node/mqtt-password
 ```
 
