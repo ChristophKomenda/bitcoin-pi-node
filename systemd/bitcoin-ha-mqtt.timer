@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic Home Assistant Bitcoin node telemetry
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=60s
+AccuracySec=10s
+Unit=bitcoin-ha-mqtt.service
+
+[Install]
+WantedBy=timers.target

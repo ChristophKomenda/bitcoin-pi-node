@@ -1,0 +1,14 @@
+[Unit]
+Description=Publish Bitcoin Pi Node health to Home Assistant via MQTT
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=admin
+WorkingDirectory=/home/admin/bitcoin-pi-node
+EnvironmentFile=/etc/bitcoin-pi-node/ha-mqtt.env
+ExecStart=/home/admin/bitcoin-pi-node/.venv/bin/python /home/admin/bitcoin-pi-node/scripts/bitcoin-ha-mqtt.py
+TimeoutStartSec=60
+NoNewPrivileges=true
+PrivateTmp=true
