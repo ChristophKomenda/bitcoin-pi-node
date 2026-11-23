@@ -40,10 +40,26 @@ printf 'Repository: %s\nStorage: %s\nDevice: %s\nUUID: %s\n' "$repo_dir" "$data_
 # Do not change an existing active service or restart the node automatically.
 sudo install -d -m 0755 /usr/local/libexec/bitcoin-pi-node
 sudo install -m 0755 "$repo_dir/scripts/check-storage.sh" /usr/local/libexec/bitcoin-pi-node/check-storage
+sudo install -m 0755 "$repo_dir/scripts/apply-bandwidth.sh" /usr/local/libexec/bitcoin-pi-node/apply-bandwidth
+sudo install -m 0755 "$repo_dir/scripts/bitcoin-bandwidth-limit.py" /usr/local/libexec/bitcoin-pi-node/bitcoin-bandwidth-limit.py
 
 config_tmp=$(mktemp)
 trap 'rm -f "$config_tmp"' EXIT
-printf 'BITCOIN_DATA_DIR=%s\nBITCOIN_STORAGE_UUID=%s\n' "$data_dir" "$uuid" > "$config_tmp"
+# Read only the expected setting; do not execute .env as shell code.
+bandwidth_mbit=$(python3 - "$repo_dir/.env" <<'PYENV'
+import pathlib, re, sys
+p = pathlib.Path(sys.argv[1])
+rate = '0'
+if p.is_file():
+    for line in p.read_text().splitlines():
+        match = re.fullmatch(r'\s*BITCOIN_BANDWIDTH_MBIT\s*=\s*["\']?([0-9]+(?:\.[0-9]+)?)["\']?\s*', line)
+        if match:
+            rate = match.group(1)
+            break
+print(rate)
+PYENV
+)
+printf 'BITCOIN_DATA_DIR=%s\nBITCOIN_STORAGE_UUID=%s\nBITCOIN_BANDWIDTH_MBIT=%s\n' "$data_dir" "$uuid" "$bandwidth_mbit" > "$config_tmp"
 sudo install -m 0600 "$config_tmp" /etc/bitcoin-pi-node.env
 
 sed -e "s|@STORAGE_DIR@|$data_dir|g" \

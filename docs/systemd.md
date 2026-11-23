@@ -26,6 +26,10 @@ sudo systemctl restart bitcoin-pi-node.service
 sudo systemctl status bitcoin-pi-node.service --no-pager
 ```
 
+## Optional bandwidth cap
+
+Set `BITCOIN_BANDWIDTH_MBIT=5` in `.env` before installing the service to enable 5 Mbit/s shaping in both directions. The systemd `ExecStartPost` hook applies this after Docker Compose starts. Default `0` disables this feature. See [bandwidth.md](bandwidth.md).
+
 ## Verify
 
 ```bash
