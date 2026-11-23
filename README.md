@@ -4,11 +4,11 @@
 
 ### Run your own Bitcoin Core node on a Raspberry Pi 5
 
-**Docker Compose · microSD / SSD / NVMe · Configurable blockchain pruning · UUID-guarded systemd startup**
+**Docker Compose · Pruned Bitcoin Core · UUID-protected storage · Optional bandwidth control**
 
 A lightweight, self-hosted Bitcoin Core setup for Raspberry Pi 5. Keep control of your node, store blockchain data outside the container, and check sync progress using simple command-line tools.
 
-[Get started](#quick-start) · [Bandwidth control](docs/bandwidth.md) · [Safe auto-start](#optional-safe-autostart-with-systemd) · [Monitor](#monitor-your-node) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
+[Get started](#quick-start) · [Key features](#why-bitcoin-pi-node) · [Bandwidth control](docs/bandwidth.md) · [Safe auto-start](#optional-safe-autostart-with-systemd) · [Monitor](#monitor-your-node) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
 
 ![Bitcoin](https://img.shields.io/badge/Bitcoin-Core-F7931A?style=flat-square&logo=bitcoin&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-5-A22846?style=flat-square&logo=raspberrypi&logoColor=white)
@@ -33,7 +33,13 @@ Running a Bitcoin node lets you independently validate Bitcoin's rules instead o
 | **CLI helpers** | Inspect blockchain, connections and synchronization progress without typing long Docker commands. |
 | **Adjustable storage path** | Configure the data directory and pruning target through `.env`. |
 | **Optional guarded auto-start** | systemd validates the expected filesystem UUID before starting Docker Compose. |
-| **Optional bandwidth limit** | Limit Bitcoin upload and download independently with Linux `tc` and an optional systemd hook. |
+| **Optional bandwidth limit** | Cap Bitcoin download and upload per direction using Linux `tc`, without shaping unrelated host services. |
+
+### Three advantages at a glance
+
+- **Safe storage startup:** An optional systemd service checks the exact mount point and expected filesystem UUID before launching Bitcoin Core.
+- **Bandwidth control:** Optionally cap the Bitcoin container's upload and download bandwidth, leaving other Raspberry Pi services unaffected by the container-specific limit.
+- **Lightweight Docker setup:** Pruned Bitcoin Core, persistent blockchain data, and convenient CLI monitoring with minimal dependencies.
 
 ### What this project does *not* include
 
@@ -62,7 +68,7 @@ git clone https://github.com/ChristophKomenda/bitcoin-pi-node.git
 cd bitcoin-pi-node
 ```
 
-### 2. Configure storage and pruning
+### 2. Configure storage, pruning and optional bandwidth
 
 ```bash
 cp .env.example .env
@@ -74,10 +80,12 @@ The included example uses:
 ```dotenv
 BITCOIN_DATA_DIR=/srv/bitcoin
 BITCOIN_PRUNE_MIB=20000
+BITCOIN_BANDWIDTH_MBIT=0
 ```
 
 - `BITCOIN_DATA_DIR`: host directory mounted into the container at `/home/bitcoin/.bitcoin`.
 - `BITCOIN_PRUNE_MIB`: pruning target in MiB, not total disk consumption.
+- `BITCOIN_BANDWIDTH_MBIT`: optional upload and download limit **per direction** in Mbit/s. `0` (default) disables shaping; for example, `5` limits each direction to about 5 Mbit/s. **Only applied by the optional systemd setup**, not by `scripts/install.sh` or a direct `docker compose up -d`.
 
 **Verify your mount** (adapt the path if you changed it):
 
@@ -151,7 +159,10 @@ sudo systemctl restart bitcoin-pi-node.service
 
 For the full setup, troubleshooting and rollback instructions, see **[Safe automatic start with systemd](docs/systemd.md)**.
 
-**Optional bandwidth cap:** set `BITCOIN_BANDWIDTH_MBIT=5` in `.env` (default `0`, disabled) before running `scripts/install-systemd.sh`. This applies a per-direction upload/download limit to the Bitcoin container after the UUID-guarded start. See [bandwidth setup and migration](docs/bandwidth.md).
+**Optional bandwidth cap:** Set `BITCOIN_BANDWIDTH_MBIT=5` in `.env` (default `0`, disabled), install `iproute2` and `util-linux`, then run `scripts/install-systemd.sh`. The bandwidth hook runs after the UUID-guarded Docker start. See [bandwidth setup and migration](docs/bandwidth.md) for verification, limitations and disabling the old manual hook.
+
+> [!IMPORTANT]
+> **Use systemd as the single lifecycle manager if the guarded service is enabled.** Direct `docker compose restart`, `up -d` or image updates may bypass UUID validation or reset the container's `tc` bandwidth rules. Use `sudo systemctl restart bitcoin-pi-node.service` for controlled restarts and set the Compose restart policy to `restart: "no"`.
 
 ## Monitor your node
 
@@ -177,19 +188,28 @@ To confirm your node is synchronized, check that `initialblockdownload` is `fals
 
 ## Common operations
 
-Run commands from the cloned repository directory:
+Run commands from the cloned repository directory. **Choose one lifecycle manager:** use the guarded systemd service when installed and enabled; otherwise use Docker Compose directly.
 
-| Task | Command |
-| --- | --- |
-| Check running containers | `docker compose ps` |
-| Follow logs | `docker compose logs -f bitcoin` |
-| Restart node | `docker compose restart bitcoin` |
-| Stop node gracefully | `docker compose stop bitcoin` |
-| Start node | `docker compose up -d` |
-| View blockchain information | `bash scripts/bitcoin-node-cli getblockchaininfo` |
-| View compact status | `bash scripts/bitcoin-status` |
+| Task | Guarded systemd setup | Docker Compose without systemd |
+| --- | --- | --- |
+| Check container | `docker compose ps` | `docker compose ps` |
+| Follow logs | `docker compose logs -f bitcoin` | `docker compose logs -f bitcoin` |
+| Restart node | `sudo systemctl restart bitcoin-pi-node.service` | `docker compose restart bitcoin` |
+| Stop node gracefully | `sudo systemctl stop bitcoin-pi-node.service` | `docker compose stop bitcoin` |
+| Start node | `sudo systemctl start bitcoin-pi-node.service` | `docker compose up -d` |
+| View blockchain information | `bash scripts/bitcoin-node-cli getblockchaininfo` | Same |
+| View compact status | `bash scripts/bitcoin-status` | Same |
 
-**Updates:** Review the [official Bitcoin Core releases](https://bitcoincore.org/en/releases/) and the image tag in `docker-compose.yml` before upgrading. Make sure existing data is backed up appropriately, then update the pinned image version and run `docker compose pull` followed by `docker compose up -d`. Do not assume all upgrades or downgrades are reversible.
+**Updates:** Review the [official Bitcoin Core releases](https://bitcoincore.org/en/releases/) and the image tag in `docker-compose.yml` before upgrading; back up important data and avoid assuming all upgrades or downgrades are reversible. With systemd enabled, schedule a maintenance window and use the guarded lifecycle:
+
+```bash
+sudo systemctl stop bitcoin-pi-node.service
+docker compose pull                    # after reviewing/updating the image tag
+sudo systemctl start bitcoin-pi-node.service
+sudo systemctl status bitcoin-pi-node.service --no-pager
+```
+
+The systemd start checks storage and reapplies the optional bandwidth limit. Without systemd, use `docker compose pull` followed by `docker compose up -d` after verifying your data mount.
 
 ## Architecture
 
@@ -268,8 +288,9 @@ Initial block validation is CPU-, storage- and network-intensive. Check temperat
 
 - [x] Add installer preflight checks and resolve storage paths from Compose.
 - [x] Add optional systemd auto-start with filesystem UUID validation.
+- [x] Add optional per-direction bandwidth limiting with a systemd startup hook.
 - [ ] Add an interactive setup wizard with safer defaults.
-- [x] Add automated Compose validation and ShellCheck for all five scripts in GitHub Actions.
+- [x] Add automated Compose validation, Bash/ShellCheck checks and Python syntax validation in GitHub Actions.
 - [ ] Add tested installation examples and screenshots of CLI status output.
 - [ ] Explore optional Home Assistant monitoring integration.
 
