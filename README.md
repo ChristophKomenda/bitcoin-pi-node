@@ -4,11 +4,11 @@
 
 ### Run your own Bitcoin Core node on a Raspberry Pi 5
 
-**Docker Compose · NVMe storage · Configurable blockchain pruning · Private RPC**
+**Docker Compose · microSD / SSD / NVMe · Configurable blockchain pruning · UUID-guarded systemd startup**
 
 A lightweight, self-hosted Bitcoin Core setup for Raspberry Pi 5. Keep control of your node, store blockchain data outside the container, and check sync progress using simple command-line tools.
 
-[Get started](#quick-start) · [Check node status](#monitor-your-node) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
+[Get started](#quick-start) · [Safe auto-start](#optional-safe-autostart-with-systemd) · [Monitor](#monitor-your-node) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
 
 ![Bitcoin](https://img.shields.io/badge/Bitcoin-Core-F7931A?style=flat-square&logo=bitcoin&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-5-A22846?style=flat-square&logo=raspberrypi&logoColor=white)
@@ -22,7 +22,7 @@ A lightweight, self-hosted Bitcoin Core setup for Raspberry Pi 5. Keep control o
 
 ## Why Bitcoin Pi Node?
 
-Running a Bitcoin node lets you independently validate Bitcoin's rules instead of relying entirely on third-party infrastructure. This project packages a straightforward Docker deployment aimed at Raspberry Pi users who prefer NVMe storage and a minimal setup.
+Running a Bitcoin node lets you independently validate Bitcoin's rules instead of relying entirely on third-party infrastructure. This project packages a straightforward Docker deployment aimed at Raspberry Pi users who prefer dedicated storage and a minimal setup.
 
 | Feature | Benefit |
 | --- | --- |
@@ -32,6 +32,7 @@ Running a Bitcoin node lets you independently validate Bitcoin's rules instead o
 | **P2P only published** | Exposes TCP `8333` for Bitcoin networking; does **not** publish RPC TCP `8332`. |
 | **CLI helpers** | Inspect blockchain, connections and synchronization progress without typing long Docker commands. |
 | **Adjustable storage path** | Configure the data directory and pruning target through `.env`. |
+| **Optional guarded auto-start** | systemd validates the expected filesystem UUID before starting Docker Compose. |
 
 ### What this project does *not* include
 
@@ -43,13 +44,13 @@ Running a Bitcoin node lets you independently validate Bitcoin's rules instead o
 
 - Raspberry Pi 5 with a supported 64-bit Linux operating system and working internet connection.
 - Docker Engine and Docker Compose **plugin** installed (`docker compose`).
-- A dedicated SSD/NVMe drive is strongly recommended for Bitcoin chain data.
+- Dedicated SSD/NVMe storage is recommended; microSD can work, but initial synchronization is slower and can cause significant flash wear.
 - Enough **free** storage for the pruning target **plus** chainstate, indexes, logs and temporary overhead. The default `20000` MiB pruning setting is **not** a maximum for total disk usage.
 - `git`, Bash, Python 3, and permission to run Docker commands.
 - Adequate time, bandwidth and power for initial blockchain synchronization, which can take a long time on a Raspberry Pi.
 
 > [!CAUTION]
-> **Check your storage mount before installation.** The included installer warns if the configured data directory is not itself a mount point, but it does not stop the installation. Make sure the data directory is on the intended SSD/NVMe filesystem and that the container can write to it. Do not format drives that contain important data.
+> **Check your storage mount before installation.** The installer requires the configured Bitcoin data directory to be an existing mount point and runs preflight checks before deployment. Prepare and mount your dedicated microSD/SSD/NVMe first. Never format storage containing important data.
 
 ## Quick start
 
@@ -86,24 +87,24 @@ lsblk -f
 
 Confirm the path resolves to your intended disk and that ownership and permissions allow the Bitcoin container to write data there. The installer does not provision or mount the disk for you.
 
-> **Custom path note:** `docker compose` reads `.env`, but `scripts/install.sh` gets its `BITCOIN_DATA_DIR` shell variable from the environment (otherwise defaults to `/srv/bitcoin`). If you change the data path, export it before using the installer, or follow the manual Compose workflow below.
+> **Custom path note:** The installer resolves the Bitcoin data bind-mount from the effective Docker Compose configuration, including `.env`. Confirm the resulting host path is mounted correctly before installation.
 
 ### 3. Start Bitcoin Core
 
-For the default `/srv/bitcoin` path:
+After verifying your configured dedicated storage mount:
 
 ```bash
 bash scripts/install.sh
 ```
 
-For a custom path, first set `BITCOIN_DATA_DIR` to the same absolute path you configured in `.env`, then run the installer. Alternatively, after verifying that storage exists and is writable, run:
+Alternatively, after verifying that the dedicated storage exists, is mounted, and is writable, run:
 
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
-The installer checks for Docker and Compose, creates the configured directory if needed, pulls the image and starts the service. It does **not** install Docker or prepare your storage device.
+The installer performs storage and dependency checks before starting the service. It does **not** install Docker, partition or format a disk, or prepare your storage device.
 
 ### 4. Follow synchronization
 
@@ -112,6 +113,42 @@ docker compose logs -f bitcoin
 ```
 
 Press `Ctrl+C` to stop viewing logs; this does not stop the container.
+
+## Optional safe auto-start with systemd
+
+The repository includes an **optional UUID-guarded systemd service** for a more reliable Raspberry Pi setup. It checks that the configured Bitcoin data directory is an exact mount point **and** belongs to the expected filesystem UUID before starting the container. This helps avoid writing blockchain data to your system drive if removable storage is missing or replaced.
+
+**Before enabling systemd:** Mount your dedicated microSD, SSD, or NVMe at the path configured for Bitcoin Core, ideally via a UUID-based `/etc/fstab` entry. Ensure Docker Compose does **not** restart the container independently: set `restart: "no"` for the `bitcoin` service in a local Compose override. The repository's default Compose configuration still uses `restart: unless-stopped` until you override it.
+
+```yaml
+# docker-compose.override.yml (local configuration)
+services:
+  bitcoin:
+    restart: "no"
+```
+
+Install the service after checking your Compose configuration and storage:
+
+```bash
+docker compose config --quiet
+findmnt /srv/bitcoin              # adjust for your configured path
+bash scripts/install-systemd.sh
+sudo systemctl enable bitcoin-pi-node.service
+```
+
+The installation script derives the real bind mount from Compose, records the filesystem UUID, installs the guard, and updates the service definition. **It does not restart a running node.** To activate the new start guard, plan a controlled service restart after reviewing the unit.
+
+```bash
+sudo systemctl cat bitcoin-pi-node.service
+sudo systemctl status bitcoin-pi-node.service --no-pager
+# During a maintenance window only:
+sudo systemctl restart bitcoin-pi-node.service
+```
+
+> [!NOTE]
+> The UUID guard is a **startup safety check**, not a substitute for disk health monitoring or graceful shutdown during hardware failures. `active (exited)` is expected for this oneshot service; check `docker compose ps` for the container's actual state.
+
+For the full setup, troubleshooting and rollback instructions, see **[Safe automatic start with systemd](docs/systemd.md)**.
 
 ## Monitor your node
 
@@ -174,7 +211,7 @@ Run commands from the cloned repository directory:
 └───────────────────────────────────────────┘
 ```
 
-**Current Compose configuration:** `bitcoin/bitcoin:31.1`, `restart: unless-stopped`, `-printtoconsole=1`, `-server=1`, configurable `-prune`, TCP `8333:8333` and a persistent data bind mount. This reflects the repository configuration, not a guarantee that a particular Docker image tag is supported indefinitely.
+**Default Compose configuration (without a local override):** `bitcoin/bitcoin:31.1`, `restart: unless-stopped`, `-printtoconsole=1`, `-server=1`, configurable `-prune`, TCP `8333:8333` and a persistent data bind mount. This reflects the repository configuration, not a guarantee that a particular Docker image tag is supported indefinitely.
 
 ## Security
 
@@ -185,7 +222,7 @@ The default Compose file publishes **only P2P TCP port `8333`**. RPC is **not** 
 - Keep the operating system, Docker and Bitcoin Core updated after reviewing release notes.
 - If you later enable wallet features, establish a separate wallet backup and key-management process.
 
-Read [security notes](docs/security.md) and [storage notes](docs/storage.md).
+Read [security notes](docs/security.md), [storage notes](docs/storage.md), and [systemd setup](docs/systemd.md).
 
 ## Troubleshooting
 
@@ -199,7 +236,7 @@ Check `docker --version` and `docker compose version`. Install Docker Engine and
 <details>
 <summary><strong>The installer reports the data directory is not a mount point</strong></summary>
 
-Check `findmnt -T /srv/bitcoin` and `lsblk -f`. Confirm your expected SSD/NVMe mount and data path **before** proceeding. The installer warns but continues, so the user must verify storage.
+Check `findmnt /srv/bitcoin` and `lsblk -f`. Confirm your dedicated storage is an exact mount point at the configured data directory. The installer refuses to proceed when the mount check fails.
 
 </details>
 
@@ -226,10 +263,10 @@ Initial block validation is CPU-, storage- and network-intensive. Check temperat
 
 ## Roadmap (ideas, not implemented)
 
-- [ ] Add robust preflight checks for storage mount, free space and write permissions.
-- [ ] Harmonize custom `.env` data paths with the installer.
+- [x] Add installer preflight checks and resolve storage paths from Compose.
+- [x] Add optional systemd auto-start with filesystem UUID validation.
 - [ ] Add an interactive setup wizard with safer defaults.
-- [ ] Add automated Compose validation and shell linting in GitHub Actions.
+- [x] Add automated Compose validation and ShellCheck for all five scripts in GitHub Actions.
 - [ ] Add tested installation examples and screenshots of CLI status output.
 - [ ] Explore optional Home Assistant monitoring integration.
 
