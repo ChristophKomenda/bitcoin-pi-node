@@ -16,7 +16,7 @@ fi
 script="${BITCOIN_BANDWIDTH_SCRIPT:-/usr/local/libexec/bitcoin-pi-node/bitcoin-bandwidth-limit.py}"
 [[ -f "$script" ]] || { echo "ERROR: Missing bandwidth limiter: $script" >&2; exit 1; }
 
-for attempt in {1..15}; do
+for _ in {1..15}; do
   if /usr/bin/docker inspect -f '{{.State.Running}}' bitcoin 2>/dev/null | grep -qx true; then
     exec /usr/bin/python3 "$script" apply --mbit "$rate"
   fi
