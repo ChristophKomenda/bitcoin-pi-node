@@ -15,10 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check Bash syntax (all scripts)
-        run: bash -n scripts/install.sh scripts/bitcoin-status scripts/bitcoin-node-cli scripts/check-storage.sh scripts/install-systemd.sh
+        run: bash -n scripts/install.sh scripts/bitcoin-status scripts/bitcoin-node-cli scripts/check-storage.sh scripts/install-systemd.sh scripts/apply-bandwidth.sh
       - name: Install ShellCheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: Lint all scripts
-        run: shellcheck scripts/install.sh scripts/bitcoin-status scripts/bitcoin-node-cli scripts/check-storage.sh scripts/install-systemd.sh
+        run: shellcheck scripts/install.sh scripts/bitcoin-status scripts/bitcoin-node-cli scripts/check-storage.sh scripts/install-systemd.sh scripts/apply-bandwidth.sh
+      - name: Python bandwidth limiter syntax
+        run: python3 -m py_compile scripts/bitcoin-bandwidth-limit.py
       - name: Validate Compose configuration
         run: docker compose --env-file .env.example config --quiet

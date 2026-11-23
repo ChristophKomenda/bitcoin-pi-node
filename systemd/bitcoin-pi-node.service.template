@@ -13,6 +13,7 @@ EnvironmentFile=/etc/bitcoin-pi-node.env
 WorkingDirectory=@REPO_DIR@
 ExecStartPre=/usr/local/libexec/bitcoin-pi-node/check-storage
 ExecStart=/usr/bin/docker compose up -d
+ExecStartPost=-/usr/local/libexec/bitcoin-pi-node/apply-bandwidth
 ExecStop=/usr/bin/docker compose stop
 TimeoutStartSec=180
 TimeoutStopSec=180

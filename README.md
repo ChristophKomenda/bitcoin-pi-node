@@ -8,7 +8,7 @@
 
 A lightweight, self-hosted Bitcoin Core setup for Raspberry Pi 5. Keep control of your node, store blockchain data outside the container, and check sync progress using simple command-line tools.
 
-[Get started](#quick-start) · [Safe auto-start](#optional-safe-autostart-with-systemd) · [Monitor](#monitor-your-node) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
+[Get started](#quick-start) · [Bandwidth control](docs/bandwidth.md) · [Safe auto-start](#optional-safe-autostart-with-systemd) · [Monitor](#monitor-your-node) · [Security](#security) · [Troubleshooting](#troubleshooting) · [Contribute](#contributing)
 
 ![Bitcoin](https://img.shields.io/badge/Bitcoin-Core-F7931A?style=flat-square&logo=bitcoin&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-5-A22846?style=flat-square&logo=raspberrypi&logoColor=white)
@@ -33,6 +33,7 @@ Running a Bitcoin node lets you independently validate Bitcoin's rules instead o
 | **CLI helpers** | Inspect blockchain, connections and synchronization progress without typing long Docker commands. |
 | **Adjustable storage path** | Configure the data directory and pruning target through `.env`. |
 | **Optional guarded auto-start** | systemd validates the expected filesystem UUID before starting Docker Compose. |
+| **Optional bandwidth limit** | Limit Bitcoin upload and download independently with Linux `tc` and an optional systemd hook. |
 
 ### What this project does *not* include
 
@@ -149,6 +150,8 @@ sudo systemctl restart bitcoin-pi-node.service
 > The UUID guard is a **startup safety check**, not a substitute for disk health monitoring or graceful shutdown during hardware failures. `active (exited)` is expected for this oneshot service; check `docker compose ps` for the container's actual state.
 
 For the full setup, troubleshooting and rollback instructions, see **[Safe automatic start with systemd](docs/systemd.md)**.
+
+**Optional bandwidth cap:** set `BITCOIN_BANDWIDTH_MBIT=5` in `.env` (default `0`, disabled) before running `scripts/install-systemd.sh`. This applies a per-direction upload/download limit to the Bitcoin container after the UUID-guarded start. See [bandwidth setup and migration](docs/bandwidth.md).
 
 ## Monitor your node
 
