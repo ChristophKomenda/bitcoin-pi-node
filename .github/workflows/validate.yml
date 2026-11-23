@@ -1,0 +1,21 @@
+name: Validate
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lint-and-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Bash syntax
+        run: bash -n scripts/install.sh scripts/bitcoin-status scripts/bitcoin-node-cli
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint scripts
+        run: shellcheck scripts/install.sh scripts/bitcoin-status scripts/bitcoin-node-cli
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env.example config --quiet
