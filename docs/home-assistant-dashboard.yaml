@@ -1,0 +1,29 @@
+# Example Lovelace card YAML. Paste into a Manual card and adjust entity IDs
+# based on Home Assistant -> Settings -> Devices & Services -> MQTT -> Bitcoin Pi Node.
+type: vertical-stack
+cards:
+  - type: entities
+    title: Bitcoin Pi Node — Health
+    show_header_toggle: false
+    entities:
+      - entity: binary_sensor.bitcoin_pi_node_synchronized
+      - entity: binary_sensor.bitcoin_pi_node_sync_stalled
+      - entity: binary_sensor.bitcoin_pi_node_no_peers
+      - entity: binary_sensor.bitcoin_pi_node_low_storage
+      - entity: sensor.bitcoin_pi_node_uptime_seconds
+  - type: gauge
+    name: Synchronization
+    entity: sensor.bitcoin_pi_node_verification_progress
+    min: 0
+    max: 100
+  - type: entities
+    title: Bitcoin Core — Details
+    entities:
+      - entity: sensor.bitcoin_pi_node_blocks
+      - entity: sensor.bitcoin_pi_node_headers
+      - entity: sensor.bitcoin_pi_node_peers
+      - entity: sensor.bitcoin_pi_node_disk_gib
+      - entity: sensor.bitcoin_pi_node_storage_free_gib
+      - entity: sensor.bitcoin_pi_node_bytes_received_gib
+      - entity: sensor.bitcoin_pi_node_bytes_sent_gib
+      - entity: sensor.bitcoin_pi_node_sync_stalled_minutes

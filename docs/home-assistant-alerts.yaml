@@ -1,0 +1,44 @@
+# Optional Home Assistant YAML automations. Replace example entity IDs and notify service.
+# Add to automations.yaml (or import via UI with adjusted format as appropriate).
+- id: bitcoin_pi_node_sync_stall
+  alias: Bitcoin Pi Node — sync stalled
+  description: Alert only after Bitcoin Core reports a persistent IBD stall.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.bitcoin_pi_node_sync_stalled
+      to: 'on'
+      for: '00:05:00'
+  action:
+    - service: notify.mobile_app_YOUR_DEVICE
+      data:
+        title: Bitcoin Pi Node
+        message: Blockchain download has not advanced for the configured stall period.
+  mode: single
+
+- id: bitcoin_pi_node_low_storage
+  alias: Bitcoin Pi Node — low storage
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.bitcoin_pi_node_low_storage
+      to: 'on'
+      for: '00:05:00'
+  action:
+    - service: notify.mobile_app_YOUR_DEVICE
+      data:
+        title: Bitcoin Pi Node
+        message: Bitcoin data drive has reached the low free-space threshold.
+  mode: single
+
+- id: bitcoin_pi_node_no_peers
+  alias: Bitcoin Pi Node — no peers
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.bitcoin_pi_node_no_peers
+      to: 'on'
+      for: '00:15:00'
+  action:
+    - service: notify.mobile_app_YOUR_DEVICE
+      data:
+        title: Bitcoin Pi Node
+        message: Bitcoin Core has had no peers for at least 15 minutes.
+  mode: single
