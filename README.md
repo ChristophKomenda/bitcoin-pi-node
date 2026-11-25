@@ -338,3 +338,8 @@ If this project helps you, consider starring the repository so others can discov
 Released under the [MIT License](LICENSE). Bitcoin Core is a separate open-source project; see [Bitcoin Core](https://bitcoincore.org/) for its upstream documentation and licenses.
 
 Built and maintained by [Christoph Komenda](https://github.com/ChristophKomenda). Not affiliated with the Bitcoin Core maintainers or the Raspberry Pi Foundation.
+
+<!-- github-growth-related-projects -->
+## Related projects
+
+- [**Bitcoin Node Monitor**](https://github.com/ChristophKomenda/bitcoin-node-monitor) — Experimental remote Bitcoin Core monitoring for HAOS.
