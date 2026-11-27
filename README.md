@@ -1,6 +1,6 @@
 <div align="center">
 
-# ₿ Bitcoin Pi Node
+# ₿ Bitcoin Pi Node — Raspberry Pi 5 Bitcoin Full Node with Docker
 
 ### Run your own Bitcoin Core node on a Raspberry Pi 5
 
@@ -343,3 +343,21 @@ Built and maintained by [Christoph Komenda](https://github.com/ChristophKomenda)
 ## Related projects
 
 - [**Bitcoin Node Monitor**](https://github.com/ChristophKomenda/bitcoin-node-monitor) — Experimental remote Bitcoin Core monitoring for HAOS.
+
+<!-- github-seo:begin -->
+
+## Related projects
+
+- [Infrastructure HA Monitor](https://github.com/ChristophKomenda/infrastructure-ha-monitor)
+
+## Frequently asked questions — quick answers
+
+### Can I run a Bitcoin full node on Raspberry Pi 5 with Docker?
+
+This project provides a Docker Compose setup for a pruned, validating Bitcoin Core node. Follow the storage and deployment instructions in the Quick Start.
+
+### Can I monitor Bitcoin Core in Home Assistant?
+
+The repository includes MQTT-based node monitoring. See the Home Assistant integration documentation for configuration and available metrics.
+
+<!-- github-seo:end -->
